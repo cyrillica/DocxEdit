@@ -1,4 +1,6 @@
 ﻿using SubtitleEdit;
+using SubtitleEdit.Logic;
+
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
@@ -26,7 +28,7 @@ namespace Nikse.SubtitleEdit.PluginLogic
 			{
 				Filter = "Файлы MS Word (*.docx; *.doc)|*.docx; *.doc"
 			};
-			openFileDialog.FileName
+			Translation.DocxToTxt(openFileDialog.FileName);
 			//subtitle = subtitle.Trim();
 			//if (string.IsNullOrEmpty(subtitle))
 			//{
