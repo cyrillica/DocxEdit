@@ -1,18 +1,21 @@
 ﻿using Aspose.Words;
 using Aspose.Words.Tables;
 
+using System;
 using System.Collections;
 using System.Text.RegularExpressions;
+
+using Paragraph = Aspose.Words.Paragraph;
 
 namespace SubtitleEdit.Logic
 {
 	public static class Translation
 	{
-		public static void DocxToTxt(string file_name)
+		public static string DocxToTxt(string file_name)
 		{
 			var document = new Document(file_name);
 			DocumentBuilder builder = new DocumentBuilder(document);
-			var newFileName = Regex.Replace(file_name, @"\.doc.$", ".txt");
+			var newFileName = Regex.Replace(file_name, @"\.doc.$", ".tmp");
 
 			Node[] tables = document.GetChildNodes(NodeType.Table, true).ToArray();
 			foreach (Table table in tables)
@@ -26,7 +29,11 @@ namespace SubtitleEdit.Logic
 				builder.Writeln(ConvertTable(table));
 				table.Remove();
 			}
-			document.Save(newFileName, SaveFormat.Text);
+			string documentText = document.Range.Text;
+			return documentText
+				.Replace("Evaluation Only. Created with Aspose.Words. Copyright 2003-2022 Aspose Pty Ltd.", "")
+				.Replace("Created with an evaluation copy of Aspose.Words. To discover the full versions of our APIs please visit: https://products.aspose.com/words/", "");
+			//document.Save(newFileName, SaveFormat.Text);
 		}
 
 		private static string ConvertTable(Table tab)
@@ -77,10 +84,10 @@ namespace SubtitleEdit.Logic
 					//	curentCell += " ";
 
 					if (cellIndex != row.Cells.Count - 1)
-						curentCell += "\t";
+						curentCell += "|";
 					currentRow += curentCell;
 				}
-				output += currentRow + "\r\n";
+				output += currentRow + Environment.NewLine;
 			}
 
 			return output;

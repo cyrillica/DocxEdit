@@ -1,8 +1,7 @@
 ﻿using SubtitleEdit;
 using SubtitleEdit.Logic;
 
-using System;
-using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace Nikse.SubtitleEdit.PluginLogic
@@ -24,35 +23,20 @@ namespace Nikse.SubtitleEdit.PluginLogic
 
 		string IPlugin.DoAction(Form parentForm, string subtitle, double frameRate, string listViewLineSeparatorString, string subtitleFileName, string videoFileName, string rawText)
 		{
-			OpenFileDialog openFileDialog = new OpenFileDialog
-			{
-				Filter = "Файлы MS Word (*.docx; *.doc)|*.docx; *.doc"
-			};
-			Translation.DocxToTxt(openFileDialog.FileName);
-			//subtitle = subtitle.Trim();
-			//if (string.IsNullOrEmpty(subtitle))
-			//{
-			//	MessageBox.Show("Субтитры не загружены", parentForm.Text,
-			//		MessageBoxButtons.OK, MessageBoxIcon.Warning);
-			//	return string.Empty;
-			//}
+			var form = new Form1((this as IPlugin).Name, (this as IPlugin).Description);
+
+			subtitle = Translation.DocxToTxt(form.PathToChosenFile).Trim();
+			subtitleFileName = form.PathToChosenFile;
+			var sub = new Subtitle();
+			var srt = new SubRip();
+			srt.LoadSubtitle(sub, subtitle.SplitToLines().ToList(), form.PathToChosenFile);
+
+			Configuration.CurrentFrameRate = frameRate;
 
 			if (!string.IsNullOrEmpty(listViewLineSeparatorString))
 				Configuration.ListViewLineSeparatorString = listViewLineSeparatorString;
 
-			var list = new List<string>();
-			foreach (string line in subtitle.Replace(Environment.NewLine, "\n").Split('\n'))
-				list.Add(line);
-
-			var sub = new Subtitle();
-			var srt = new SubRip();
-			srt.LoadSubtitle(sub, list, subtitleFileName);
-			using (var form = new MainForm(sub, (this as IPlugin).Text, (this as IPlugin).Description, parentForm))
-			{
-				if (form.ShowDialog(parentForm) == DialogResult.OK)
-					return form.FixedSubtitle;
-			}
-			return string.Empty;
+			return subtitle;
 		}
 	}
 }
