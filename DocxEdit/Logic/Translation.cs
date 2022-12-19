@@ -68,11 +68,11 @@ namespace SubtitleEdit.Logic
 			output += horizontalBorder;
 
 			NodeCollection tableNotes = tab.GetChildNodes(NodeType.Paragraph, true);
+			int number = 0;
 			string regularTime = new Regex("^(0?[1-9]|1[0-2]):[0-5][0-9](:[0-5][0-9])?").ToString();
-			string previousTimeCode = "00:00:00";
 			foreach (Row row in tab.Rows)
 			{
-				string currentRow = "";
+				string currentRow = (++number).ToString() + Environment.NewLine;
 
 				foreach (Cell cell in row.Cells)
 				{
@@ -81,11 +81,7 @@ namespace SubtitleEdit.Logic
 					string curentCell = cell.GetText().Replace("\a", "").Replace("\n", "").Replace("\r", "");
 
 					if (Regex.IsMatch(curentCell, regularTime))
-					{
-						var before = curentCell;
-						curentCell = previousTimeCode + " --> " + curentCell;
-						previousTimeCode = before;
-					}
+						curentCell += " --> ";
 
 					if (cellIndex != row.Cells.Count - 1)
 						curentCell += Environment.NewLine;
