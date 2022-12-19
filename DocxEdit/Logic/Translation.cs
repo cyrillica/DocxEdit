@@ -33,7 +33,6 @@ namespace SubtitleEdit.Logic
 			return documentText
 				.Replace("Evaluation Only. Created with Aspose.Words. Copyright 2003-2022 Aspose Pty Ltd.", "")
 				.Replace("Created with an evaluation copy of Aspose.Words. To discover the full versions of our APIs please visit: https://products.aspose.com/words/", "");
-			//document.Save(newFileName, SaveFormat.Text);
 		}
 
 		private static string ConvertTable(Table tab)
@@ -42,7 +41,7 @@ namespace SubtitleEdit.Logic
 
 			ArrayList columnWidhs = new ArrayList();
 			int tableWidth = 0;
-			string horizontalBorder = string.Empty;
+			string horizontalBorder = "";
 
 			foreach (Row row in tab.Rows)
 				foreach (Cell cell in row.Cells)
@@ -69,9 +68,11 @@ namespace SubtitleEdit.Logic
 			output += horizontalBorder;
 
 			NodeCollection tableNotes = tab.GetChildNodes(NodeType.Paragraph, true);
+			string regularTime = new Regex("^(0?[1-9]|1[0-2]):[0-5][0-9](:[0-5][0-9])?").ToString();
+			string previousTimeCode = "00:00:00";
 			foreach (Row row in tab.Rows)
 			{
-				string currentRow = string.Empty;
+				string currentRow = "";
 
 				foreach (Cell cell in row.Cells)
 				{
@@ -79,14 +80,18 @@ namespace SubtitleEdit.Logic
 
 					string curentCell = cell.GetText().Replace("\a", "").Replace("\n", "").Replace("\r", "");
 
-					//Insert white spaces to the end of cell text
-					//while (curentCell.Length < (int) columnWidhs[cellIndex])
-					//	curentCell += " ";
+					if (Regex.IsMatch(curentCell, regularTime))
+					{
+						var before = curentCell;
+						curentCell = previousTimeCode + " --> " + curentCell;
+						previousTimeCode = before;
+					}
 
 					if (cellIndex != row.Cells.Count - 1)
-						curentCell += "|";
+						curentCell += Environment.NewLine;
 					currentRow += curentCell;
 				}
+
 				output += currentRow + Environment.NewLine;
 			}
 
