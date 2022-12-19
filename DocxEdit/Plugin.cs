@@ -33,7 +33,7 @@ namespace Nikse.SubtitleEdit.PluginLogic
 			var srt = new SubRip();
 			srt.LoadSubtitle(sub, subtitle.SplitToLines().ToList(), form.PathToChosenFile);
 
-			Configuration.CurrentFrameRate = 70;
+			Configuration.CurrentFrameRate = frameRate;
 
 			if (!string.IsNullOrEmpty(listViewLineSeparatorString))
 				Configuration.ListViewLineSeparatorString = listViewLineSeparatorString;
