@@ -68,11 +68,10 @@ namespace SubtitleEdit.Logic
 			output += horizontalBorder;
 
 			NodeCollection tableNotes = tab.GetChildNodes(NodeType.Paragraph, true);
-			int number = 0;
 			string regularTime = new Regex("^(0?[1-9]|1[0-2]):[0-5][0-9](:[0-5][0-9])?").ToString();
 			foreach (Row row in tab.Rows)
 			{
-				string currentRow = (++number).ToString() + Environment.NewLine;
+				string currentRow = "";
 
 				foreach (Cell cell in row.Cells)
 				{
