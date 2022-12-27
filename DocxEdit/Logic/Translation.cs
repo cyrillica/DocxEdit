@@ -1,96 +1,51 @@
-﻿using Aspose.Words;
-using Aspose.Words.Tables;
+﻿
+using Spire.Doc;
+using Spire.Doc.Collections;
+using Spire.Doc.Documents;
 
 using System;
 using System.Collections;
 using System.Text.RegularExpressions;
 
-using Paragraph = Aspose.Words.Paragraph;
 
 namespace SubtitleEdit.Logic
 {
 	public static class Translation
 	{
-		public static string DocxToTxt(string file_name)
+		public static string DocxToString(string file_name)
 		{
-			var document = new Document(file_name);
-			DocumentBuilder builder = new DocumentBuilder(document);
-			var newFileName = Regex.Replace(file_name, @"\.doc.$", ".tmp");
+			Document document = new Document(file_name);
 
-			Node[] tables = document.GetChildNodes(NodeType.Table, true).ToArray();
-			foreach (Table table in tables)
-			{
-				Paragraph par = new Paragraph(document);
+			var newFileName = Regex.Replace(file_name, @"\.doc.?$", ".txt");
+			document.SaveToFile(newFileName, FileFormat.Txt);
 
-				table.ParentNode.InsertAfter(par, table);
-				builder.MoveTo(par);
-				builder.Font.Name = "Courier New";
+			Section section = document.Sections[0];
+			section.PageSetup.DifferentFirstPageHeaderFooter = true;
+			section.HeadersFooters.FirstPageHeader.ChildObjects.Clear();
+			section.HeadersFooters.Header.ChildObjects.Clear();
 
-				builder.Writeln(ConvertTable(table));
-				table.Remove();
-			}
-			string documentText = document.Range.Text;
-			return documentText
-				.Replace("Evaluation Only. Created with Aspose.Words. Copyright 2003-2022 Aspose Pty Ltd.", "")
-				.Replace("Created with an evaluation copy of Aspose.Words. To discover the full versions of our APIs please visit: https://products.aspose.com/words/", "");
+			return document.GetText();
 		}
 
-		private static string ConvertTable(Table tab)
+		public static void StringToDocx(string file_name, string subtitleText)
 		{
-			string output = string.Empty;
+			var document = new Document(file_name);
 
-			ArrayList columnWidhs = new ArrayList();
-			int tableWidth = 0;
-			string horizontalBorder = "";
+			string[] lines = subtitleText.Split(Environment.NewLine.ToCharArray());
+			TableCollection tables = document.Sections[0].Tables;
 
-			foreach (Row row in tab.Rows)
-				foreach (Cell cell in row.Cells)
-				{
-					int cellIndex = row.Cells.IndexOf(cell);
-					if (columnWidhs.Count > cellIndex)
+			int j = -1;
+			foreach (Table table in tables)
+				foreach (TableRow row in table.Rows)
+					for (int i = 0; i < row.Cells.Count; ++i)
 					{
-						if ((int) columnWidhs[cellIndex] < cell.GetText().Length)
-							columnWidhs[cellIndex] = cell.GetText().Length;
+						TableCell cell = row.Cells[i];
+
+						foreach (Paragraph paragraph in cell.Paragraphs)
+							paragraph.Text = lines[++j];
 					}
-					else
-						columnWidhs.Add(cell.GetText().Length);
-				}
 
-			//Calculate width of table
-			for (int index = 0; index < columnWidhs.Count; index++)
-				tableWidth += (int) columnWidhs[index];
-			tableWidth += columnWidhs.Count;
-
-			//for (int index = 0; index < tableWidth; index++)
-			//	horizontalBorder += "-";
-			//horizontalBorder += "\r\n";
-
-			output += horizontalBorder;
-
-			NodeCollection tableNotes = tab.GetChildNodes(NodeType.Paragraph, true);
-			string regularTime = new Regex("^(0?[1-9]|1[0-2]):[0-5][0-9](:[0-5][0-9])?").ToString();
-			foreach (Row row in tab.Rows)
-			{
-				string currentRow = "";
-
-				foreach (Cell cell in row.Cells)
-				{
-					int cellIndex = row.Cells.IndexOf(cell);
-
-					string curentCell = cell.GetText().Replace("\a", "").Replace("\n", "").Replace("\r", "");
-
-					if (Regex.IsMatch(curentCell, regularTime))
-						curentCell += " --> ";
-
-					if (cellIndex != row.Cells.Count - 1)
-						curentCell += Environment.NewLine;
-					currentRow += curentCell;
-				}
-
-				output += currentRow + Environment.NewLine;
-			}
-
-			return output;
+			document.SaveToFile(file_name);
 		}
 	}
 }
