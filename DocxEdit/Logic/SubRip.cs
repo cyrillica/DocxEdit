@@ -32,7 +32,7 @@ namespace Nikse.SubtitleEdit.PluginLogic
 
 		internal override string Extension
 		{
-			get { return ".srt"; }
+			get { return ".ass"; }
 		}
 
 		internal override bool IsTimeBased

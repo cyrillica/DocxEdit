@@ -16,13 +16,13 @@ namespace SubtitleEdit.Logic
 		{
 			Document document = new Document(file_name);
 
-			var newFileName = Regex.Replace(file_name, @"\.doc.?$", ".txt");
-			document.SaveToFile(newFileName, FileFormat.Txt);
-
 			Section section = document.Sections[0];
 			section.PageSetup.DifferentFirstPageHeaderFooter = true;
 			section.HeadersFooters.FirstPageHeader.ChildObjects.Clear();
 			section.HeadersFooters.Header.ChildObjects.Clear();
+
+			var newFileName = Regex.Replace(file_name, @"\.doc.?$", ".txt");
+			document.SaveToFile(newFileName, FileFormat.Txt);
 
 			return document.GetText();
 		}
