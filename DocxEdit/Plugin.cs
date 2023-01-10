@@ -1,7 +1,6 @@
 ﻿using SubtitleEdit;
 using SubtitleEdit.Logic;
 
-using System.Linq;
 using System.Windows.Forms;
 
 namespace Nikse.SubtitleEdit.PluginLogic
@@ -36,13 +35,17 @@ namespace Nikse.SubtitleEdit.PluginLogic
 				subtitleFileName = form.PathToChosenFile;
 				parentForm.Text = subtitleFileName;
 
-				var sub = new Subtitle { FileName = subtitleFileName };
-				var srt = new SubRip();
+				//var sub = new Subtitle { FileName = subtitleFileName };
+				//var srt = new SubRip();
 				subtitle = Translation.DocxToString(form. PathToChosenFile).Trim();
 				//srt.LoadSubtitle(sub, subtitle.SplitToLines().ToList(), form.PathToChosenFile);
 			}
 			else
-				Translation.StringToDocx(parentForm.Text.Replace("*", ""), rawText);
+			{
+				subtitle = Translation.StringToDocx(parentForm.Text.Replace("*", ""), rawText);
+				if (subtitle != "")
+					parentForm.Text.Replace("*", "");
+			}
 
 			return subtitle;
 		}
