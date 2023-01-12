@@ -79,7 +79,7 @@ namespace SubtitleEdit.Logic
 					catch
 					{
 						MessageBox.Show(
-							$"Полностью или частично стрёрт маркер актёра. Реплика: {lines[i + 1]}.",
+							$"Полностью или частично стёрт маркер актёра. Реплика: {lines[i + 1]}.",
 							"Ошибка сохранения файла.",
 							MessageBoxButtons.OK,
 							MessageBoxIcon.Error
@@ -115,7 +115,7 @@ namespace SubtitleEdit.Logic
 			}
 
 			document.SaveToFile(file_name);
-			return document.GetText();
+			return subtitleText;
 		}
 	}
 }
