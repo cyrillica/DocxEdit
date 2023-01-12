@@ -44,7 +44,7 @@ namespace Nikse.SubtitleEdit.PluginLogic
 			{
 				subtitle = Translation.StringToDocx(parentForm.Text.Replace("*", ""), rawText);
 				if (subtitle != "")
-					parentForm.Text.Replace("*", "");
+					parentForm.Text = parentForm.Text.Replace("*", "");
 			}
 
 			return subtitle;
