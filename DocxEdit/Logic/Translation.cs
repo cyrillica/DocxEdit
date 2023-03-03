@@ -1,23 +1,28 @@
-﻿using Spire.Doc;
+﻿using Nikse.SubtitleEdit.PluginLogic;
+
+using Spire.Doc;
 using Spire.Doc.Collections;
 
 using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
 using Paragraph = Spire.Doc.Documents.Paragraph;
 
-namespace SubtitleEdit.Logic
+namespace DocxEdit.Logic
 {
 	public static class Translation
 	{
-		public static string DocxToString(string file_name)
+		public static string DocxToString(string fileName)
 		{
 			Document document;
 			try
 			{
-				document = new Document(file_name);
+				document = new Document(fileName);
 			}
 			catch
 			{
@@ -35,24 +40,75 @@ namespace SubtitleEdit.Logic
 			section.HeadersFooters.FirstPageHeader.ChildObjects.Clear();
 			section.HeadersFooters.Header.ChildObjects.Clear();
 
+			string documentText = "";
 			TableCollection tables = document.Sections[0].Tables;
 			foreach (Table table in tables)
 				foreach (TableRow row in table.Rows)
-					foreach (Paragraph paragraph in row.Cells[1].Paragraphs)
-						paragraph.Text = "[" + paragraph.Text + "]";
+					if (row.Cells[0].Paragraphs[0].Text == "")
+					{
+						table.Rows.Remove(row);
+						break;
+					}
 
-			var newFileName = Regex.Replace(file_name, @"\.doc.?$", ".txt");
-			document.SaveToFile(newFileName, FileFormat.Txt);
+			foreach (Table table in tables)
+				foreach (TableRow row in table.Rows)
+					foreach (TableCell cell in row.Cells)
+					{
+						cell.LastParagraph.Text += '|';
+						for (int i = 0; i < cell.Paragraphs.Count; ++i)
+							documentText += cell.Paragraphs[i].Text;
+					}
 
-			return document.GetText();
+			string newFileName = Regex.Replace(fileName, @"\.doc.?$", ".ass");
+			File.WriteAllText(newFileName, RawTextToASSA(documentText));
+			//document.SaveToFile(newFileName, FileFormat.Txt);
+
+			return File.ReadAllText(newFileName);
 		}
 
-		public static string StringToDocx(string file_name, string subtitleText)
+		static string RawTextToASSA(string rawText)
+		{
+			string result = @"[Script Info]
+; This is an Advanced Sub Station Alpha v4+ script.
+Title: Untitled
+ScriptType: v4.00+
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Arial,20,&H00FFFFFF,&H0000FFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,1,1,2,10,10,10,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text";
+			result += Environment.NewLine;
+
+			List<string> rawLines = rawText
+				.Split(('|' + Environment.NewLine).ToCharArray())
+				.Where(line => !string.IsNullOrEmpty(line))
+				.ToList();
+
+			for (int i = 0; i < rawLines.Count - 2; i += 3)
+			{
+				TimeOnly startTime = new TimeOnly(
+					0,
+					int.Parse(rawLines[i].Substring(0, 2)),
+					int.Parse(rawLines[i].Substring(3, 2)),
+					0
+				);
+				TimeOnly stopTime = startTime.Add(new TimeSpan(0, 2, 0));
+
+				string line = $"Dialogue: 0,{startTime:H:mm:ss},{stopTime:H:mm:ss},Default,{rawLines[i + 1]},0,0,0,,{rawLines[i + 2]}" + Environment.NewLine;
+				result += line;
+			}
+
+			return result;
+		}
+
+		public static string StringToDocx(string fileName, string subtitleText)
 		{
 			Document document;
 			try
 			{
-				document = new Document(file_name);
+				document = new Document(fileName);
 			}
 			catch
 			{
@@ -66,8 +122,7 @@ namespace SubtitleEdit.Logic
 			}
 
 			string[] lines = subtitleText
-				.Split(Environment.NewLine.ToCharArray())
-				.ToArray();
+				.Split(Environment.NewLine.ToCharArray());
 			for (int i = 1; i < lines.Length; i += 4)
 				if (string.IsNullOrEmpty(lines[i]))
 				{
@@ -114,7 +169,7 @@ namespace SubtitleEdit.Logic
 					}
 			}
 
-			document.SaveToFile(file_name);
+			document.SaveToFile(fileName);
 			return subtitleText;
 		}
 	}

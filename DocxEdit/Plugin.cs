@@ -1,6 +1,9 @@
-﻿using SubtitleEdit;
-using SubtitleEdit.Logic;
+﻿using DocxEdit.Logic;
 
+using SubtitleEdit;
+
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace Nikse.SubtitleEdit.PluginLogic
@@ -23,9 +26,10 @@ namespace Nikse.SubtitleEdit.PluginLogic
 		string IPlugin.DoAction(Form parentForm, string subtitle, double frameRate, string listViewLineSeparatorString, string subtitleFileName, string videoFileName, string rawText)
 		{
 			Configuration.CurrentFrameRate = frameRate;
-
 			if (!string.IsNullOrEmpty(listViewLineSeparatorString))
 				Configuration.ListViewLineSeparatorString = listViewLineSeparatorString;
+
+			string outputRawText;
 
 			if (subtitle == "\r\n\r\n")
 			{
@@ -35,19 +39,20 @@ namespace Nikse.SubtitleEdit.PluginLogic
 				subtitleFileName = form.PathToChosenFile;
 				parentForm.Text = subtitleFileName;
 
-				//var sub = new Subtitle { FileName = subtitleFileName };
-				//var srt = new SubRip();
-				subtitle = Translation.DocxToString(form. PathToChosenFile).Trim();
-				//srt.LoadSubtitle(sub, subtitle.SplitToLines().ToList(), form.PathToChosenFile);
+				outputRawText = Translation.DocxToString(form.PathToChosenFile);
+				//srt.LoadSubtitle(sub, sbt, subtitleFileName);
+				//assa.LoadSubtitle(sub, subtitle.SplitToLines(), subtitleFileName);
+				//if (string.IsNullOrEmpty(sub.Header))
+				//	sub.Header = AdvancedSubStationAlpha.DefaultHeader;
 			}
 			else
 			{
-				subtitle = Translation.StringToDocx(parentForm.Text.Replace("*", ""), rawText);
+				outputRawText = Translation.StringToDocx(parentForm.Text.Replace("*", ""), rawText);
 				if (subtitle != "")
 					parentForm.Text = parentForm.Text.Replace("*", "");
 			}
 
-			return subtitle;
+			return outputRawText;
 		}
 	}
 }
