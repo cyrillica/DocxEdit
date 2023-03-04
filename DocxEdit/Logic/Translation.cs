@@ -1,11 +1,8 @@
-﻿using Nikse.SubtitleEdit.PluginLogic;
-
-using Spire.Doc;
+﻿using Spire.Doc;
 using Spire.Doc.Collections;
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -68,6 +65,7 @@ namespace DocxEdit.Logic
 
 		static string RawTextToASSA(string rawText)
 		{
+			const int optimalCharacterRatePerSecond = 15;
 			string result = @"[Script Info]
 ; This is an Advanced Sub Station Alpha v4+ script.
 Title: Untitled
@@ -92,11 +90,13 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text"
 					0,
 					int.Parse(rawLines[i].Substring(0, 2)),
 					int.Parse(rawLines[i].Substring(3, 2)),
+					0,
 					0
 				);
-				TimeOnly stopTime = startTime.Add(new TimeSpan(0, 2, 0));
+				int lettersCount = Regex.Matches(rawLines[i + 2], @"\w").Count; // кол-во буквенных символов для расчёта времени конца реплики
+				TimeOnly stopTime = startTime.Add(new TimeSpan(0, 0, lettersCount / optimalCharacterRatePerSecond));
 
-				string line = $"Dialogue: 0,{startTime:H:mm:ss},{stopTime:H:mm:ss},Default,{rawLines[i + 1]},0,0,0,,{rawLines[i + 2]}" + Environment.NewLine;
+				string line = $"Dialogue: 0,{startTime:H:mm:ss.ff},{stopTime:H:mm:ss.ff},Default,{rawLines[i + 1]},0,0,0,,{rawLines[i + 2]}" + Environment.NewLine;
 				result += line;
 			}
 
