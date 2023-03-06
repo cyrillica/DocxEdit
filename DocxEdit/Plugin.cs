@@ -40,14 +40,10 @@ namespace Nikse.SubtitleEdit.PluginLogic
 				parentForm.Text = subtitleFileName;
 
 				outputRawText = Translation.DocxToString(form.PathToChosenFile);
-				//srt.LoadSubtitle(sub, sbt, subtitleFileName);
-				//assa.LoadSubtitle(sub, subtitle.SplitToLines(), subtitleFileName);
-				//if (string.IsNullOrEmpty(sub.Header))
-				//	sub.Header = AdvancedSubStationAlpha.DefaultHeader;
 			}
 			else
 			{
-				outputRawText = Translation.StringToDocx(parentForm.Text.Replace("*", ""), rawText);
+				outputRawText = Translation.ASSAToDocx(parentForm.Text.Replace("*", ""), rawText);
 				if (subtitle != "")
 					parentForm.Text = parentForm.Text.Replace("*", "");
 			}

@@ -103,7 +103,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text"
 			return result;
 		}
 
-		public static string StringToDocx(string fileName, string subtitleText)
+		public static string ASSAToDocx(string fileName, string subtitleText)
 		{
 			Document document;
 			try
@@ -121,31 +121,24 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text"
 				return "";
 			}
 
-			string[] lines = subtitleText
-				.Split(Environment.NewLine.ToCharArray());
-			for (int i = 1; i < lines.Length; i += 4)
-				if (string.IsNullOrEmpty(lines[i]))
-				{
-					string nextLine = lines[i + 1];
-					try
-					{
-						lines[i] = nextLine.Substring(1, nextLine.IndexOf(']') - 1);
-					}
-					catch
-					{
-						MessageBox.Show(
-							$"Полностью или частично стёрт маркер актёра. Реплика: {lines[i + 1]}.",
-							"Ошибка сохранения файла.",
-							MessageBoxButtons.OK,
-							MessageBoxIcon.Error
-						);
-						return "";
-					}
-					lines[i + 1] = nextLine.Remove(0, nextLine.IndexOf(']') + 2);
-				}
-			lines = lines.Where(line => !string.IsNullOrEmpty(line)).ToArray();
+			List<string> dialogues = subtitleText
+				.Split(Environment.NewLine.ToCharArray())
+				.Where(line => !string.IsNullOrEmpty(line) && line.Contains("Dialogue"))
+				.ToList();
+			List<List<string>> contentForTable = new List<List<string>>();
 
-			int j = 0;
+			foreach (string dialogue in dialogues)
+			{
+				int indexOfText = FindNthOccur(dialogue, ',', 9) + 1;
+				string text = dialogue.Substring(indexOfText);
+				string dialogueWithoutText = dialogue.Remove(indexOfText - 1);
+
+				string start = $"{dialogueWithoutText.Split(',')[1]:mm:ss}";
+				string name = dialogueWithoutText.Split(',')[4];
+
+				contentForTable.Add(new List<string>() { start, name, text });
+			}
+
 			TableCollection tables = document.Sections[0].Tables;
 			foreach (Table table in tables)
 			{
@@ -154,23 +147,41 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text"
 					startRowNumber = 1;
 
 				for (int i = startRowNumber; i < table.Rows.Count; i++)
+				{
+					int j = 0;
 					foreach (TableCell cell in table.Rows[i].Cells)
 					{
-						// Т. к. в некоторых ячейках таблицы больше, чем два "параграфа" (переноса на другую строку),
-						// а в массиве субтитров из SE символы "\n" просто заменяются на пробелы,
-						// то для переноса текста из SE обратно в документ надо заменить все существующие параграфы одним.
+						/* Т. к. в некоторых ячейках таблицы больше, чем два "параграфа" (переноса на другую строку),
+						* а в массиве субтитров из SE символы "\n" просто заменяются на пробелы,
+						* то для переноса текста из SE обратно в документ надо заменить все существующие параграфы одним.
+						*/
 						var paragraph = new Paragraph(document)
 						{
-							Text = lines[j++]
+							Text = contentForTable[startRowNumber == 0 ? i : i - 1][j++]
 						};
 
 						cell.Paragraphs.Clear();
 						cell.Paragraphs.Add(paragraph);
 					}
+				}
 			}
 
 			document.SaveToFile(fileName);
 			return subtitleText;
+		}
+
+		static int FindNthOccur(string str, char ch, int n)
+		{
+			int occur = 0;
+
+			for (int i = 0; i < str.Length; i++)
+			{
+				if (str[i] == ch)
+					occur++;
+				if (occur == n)
+					return i;
+			}
+			return -1;
 		}
 	}
 }
