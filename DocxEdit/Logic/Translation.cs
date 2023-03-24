@@ -32,13 +32,52 @@ namespace DocxEdit.Logic
 				return "";
 			}
 
+			Regex mmss = new Regex(@"(([0]?[0-9][0-9]|[0-9]):([0-5][0-9]))"); //время типа "МинМин:СекСек"
+			TableCollection tables = document.Sections[0].Tables;
+			// вставка субтитра с таймкодом в реплике
+			foreach (Table table in tables)
+				for (int i = 0; i < table.Rows.Count; i++)
+				{
+					string cellText = "";
+					foreach (Paragraph paragraph in table.Rows[i].Cells[2].Paragraphs)
+						cellText += paragraph.Text + " ";
+
+					List<string> timecodes = new List<string>();
+					foreach (Match match in mmss.Matches(cellText))
+						timecodes.Add(match.Value);
+
+					if (timecodes.Count == 0)
+						continue;
+
+					string[] replics = cellText.Split(timecodes.ToArray(), StringSplitOptions.None);
+
+					table.Rows[i].Cells[2].Paragraphs.Clear();
+					table.Rows[i].Cells[2].AddParagraph().Text = replics[0];
+
+					string author = table.Rows[i].Cells[1].FirstParagraph.Text;
+
+					int j = 1;
+					foreach (string timecode in timecodes)
+					{
+						TableRow trow = table.AddRow(3);
+
+						trow.Cells[0].AddParagraph().Text = timecode;
+						trow.Cells[1].AddParagraph().Text = author;
+						trow.Cells[2].AddParagraph().Text = replics[j++];
+
+						table.Rows.Insert(++i, trow);
+						document.SaveToFile(fileName);
+					}
+				}
+
+			return "";
+
 			Section section = document.Sections[0];
 			section.PageSetup.DifferentFirstPageHeaderFooter = true;
 			section.HeadersFooters.FirstPageHeader.ChildObjects.Clear();
 			section.HeadersFooters.Header.ChildObjects.Clear();
 
 			string documentText = "";
-			TableCollection tables = document.Sections[0].Tables;
 			foreach (Table table in tables)
 				foreach (TableRow row in table.Rows)
 					if (row.Cells[0].Paragraphs[0].Text == "")
@@ -56,28 +95,17 @@ namespace DocxEdit.Logic
 							documentText += cell.Paragraphs[i].Text;
 					}
 
-			string newFileName = Regex.Replace(fileName, @"\.doc.?$", ".ass");
-			File.WriteAllText(newFileName, RawTextToASSA(documentText));
+			string newFileName = Regex.Replace(fileName, @"\.doc.?$", ".txt");
 			//document.SaveToFile(newFileName, FileFormat.Txt);
+			File.WriteAllText(newFileName, RawTextToSRT(documentText));
 
 			return File.ReadAllText(newFileName);
 		}
 
-		static string RawTextToASSA(string rawText)
+		static string RawTextToSRT(string rawText)
 		{
 			const int optimalCharacterRatePerSecond = 15;
-			string result = @"[Script Info]
-; This is an Advanced Sub Station Alpha v4+ script.
-Title: Untitled
-ScriptType: v4.00+
-
-[V4+ Styles]
-Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,Arial,20,&H00FFFFFF,&H0000FFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,1,1,2,10,10,10,1
-
-[Events]
-Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text";
-			result += Environment.NewLine;
+			string result = "";
 
 			List<string> rawLines = rawText
 				.Split(('|' + Environment.NewLine).ToCharArray())
