@@ -14,7 +14,7 @@ namespace DocxEdit.Logic
 {
 	public static class Translation
 	{
-		public static string DocxToString(string fileName)
+		public static string DocxToPlainText(string fileName)
 		{
 			Document document;
 			try
@@ -36,11 +36,15 @@ namespace DocxEdit.Logic
 			TableCollection tables = document.Sections[0].Tables;
 			// вставка субтитра с таймкодом в реплике
 			foreach (Table table in tables)
-				for (int i = 0; i < table.Rows.Count; i++)
+				for (int i = 0; i < table.Rows.Count; ++i)
 				{
 					string cellText = "";
 					foreach (Paragraph paragraph in table.Rows[i].Cells[2].Paragraphs)
+					{
+						int t = table.Rows[i].Cells.Count;
+						paragraph.Text = Regex.Replace(paragraph.Text, @"\^|\/", "");
 						cellText += paragraph.Text + " ";
+					}
 
 					List<string> timecodes = new List<string>();
 					foreach (Match match in mmss.Matches(cellText))
@@ -59,7 +63,7 @@ namespace DocxEdit.Logic
 					int j = 1;
 					foreach (string timecode in timecodes)
 					{
-						TableRow trow = table.AddRow(3);
+						TableRow trow = table.AddRow(false);
 
 						trow.Cells[0].AddParagraph().Text = timecode;
 						trow.Cells[1].AddParagraph().Text = author;
@@ -69,8 +73,6 @@ namespace DocxEdit.Logic
 						document.SaveToFile(fileName);
 					}
 				}
-
-			return "";
 
 			Section section = document.Sections[0];
 			section.PageSetup.DifferentFirstPageHeaderFooter = true;
@@ -96,13 +98,12 @@ namespace DocxEdit.Logic
 					}
 
 			string newFileName = Regex.Replace(fileName, @"\.doc.?$", ".txt");
-			//document.SaveToFile(newFileName, FileFormat.Txt);
-			File.WriteAllText(newFileName, RawTextToSRT(documentText));
+			File.WriteAllText(newFileName, PlainTextToSRT(documentText));
 
 			return File.ReadAllText(newFileName);
 		}
 
-		static string RawTextToSRT(string rawText)
+		static string PlainTextToSRT(string rawText)
 		{
 			const int optimalCharacterRatePerSecond = 15;
 			string result = "";
@@ -112,7 +113,7 @@ namespace DocxEdit.Logic
 				.Where(line => !string.IsNullOrEmpty(line))
 				.ToList();
 
-			for (int i = 0; i < rawLines.Count - 2; i += 3)
+			for (int i = 0, j = 1; i < rawLines.Count - 2; i += 3, ++j)
 			{
 				TimeOnly startTime = new TimeOnly(
 					0,
@@ -124,14 +125,14 @@ namespace DocxEdit.Logic
 				int lettersCount = Regex.Matches(rawLines[i + 2], @"\w").Count; // кол-во буквенных символов для расчёта времени конца реплики
 				TimeOnly stopTime = startTime.Add(new TimeSpan(0, 0, lettersCount / optimalCharacterRatePerSecond));
 
-				string line = $"Dialogue: 0,{startTime:H:mm:ss.ff},{stopTime:H:mm:ss.ff},Default,{rawLines[i + 1]},0,0,0,,{rawLines[i + 2]}" + Environment.NewLine;
+				string line = $"{j}\n{startTime:HH:mm:ss,fff} --> {stopTime:HH:mm:ss,fff}\n{rawLines[i + 2]}\n\n";
 				result += line;
 			}
 
 			return result;
 		}
 
-		public static string ASSAToDocx(string fileName, string subtitleText)
+		public static string SRTToDocx(string fileName, string subtitleText)
 		{
 			Document document;
 			try
@@ -149,22 +150,21 @@ namespace DocxEdit.Logic
 				return "";
 			}
 
-			List<string> dialogues = subtitleText
-				.Split(Environment.NewLine.ToCharArray())
-				.Where(line => !string.IsNullOrEmpty(line) && line.Contains("Dialogue"))
+			List<string> dialogues = Regex
+				.Split(subtitleText, @"\d+\r\n") // разделение по цифрам
+				.Where(line => !string.IsNullOrEmpty(line))
 				.ToList();
-			List<List<string>> contentForTable = new List<List<string>>();
 
-			foreach (string dialogue in dialogues)
+			for (int i = 0; i < dialogues.Count; i += 2)
 			{
-				int indexOfText = FindNthOccur(dialogue, ',', 9) + 1;
-				string text = dialogue.Substring(indexOfText);
-				string dialogueWithoutText = dialogue.Remove(indexOfText - 1);
-
-				string start = $"{dialogueWithoutText.Split(',')[1]:mm:ss}";
-				string name = dialogueWithoutText.Split(',')[4];
-
-				contentForTable.Add(new List<string>() { start, name, text });
+				TimeOnly startTime = new TimeOnly(
+					0,
+					int.Parse(dialogues[i].Substring(3, 2)),
+					int.Parse(dialogues[i].Substring(6, 2)),
+					0,
+					0
+				);
+				dialogues[i] = $"{startTime:mm:ss}";
 			}
 
 			TableCollection tables = document.Sections[0].Tables;
@@ -174,26 +174,33 @@ namespace DocxEdit.Logic
 				if (table.Rows[0].Cells[0].Paragraphs[0].Text == "")
 					startRowNumber = 1;
 
-				for (int i = startRowNumber; i < table.Rows.Count; i++)
+				int j = 0;
+				for (int i = startRowNumber; i < table.Rows.Count; ++i)
 				{
-					int j = 0;
-					foreach (TableCell cell in table.Rows[i].Cells)
+					/* Т. к. в некоторых ячейках таблицы больше, чем два "параграфа" (переноса на другую строку),
+					* а в массиве субтитров из SE символы "\n" просто заменяются на пробелы,
+					* то для переноса текста из SE обратно в документ надо заменить все существующие параграфы одним.
+					*/
+					var startTimeParagraph = new Paragraph(document)
 					{
-						/* Т. к. в некоторых ячейках таблицы больше, чем два "параграфа" (переноса на другую строку),
-						* а в массиве субтитров из SE символы "\n" просто заменяются на пробелы,
-						* то для переноса текста из SE обратно в документ надо заменить все существующие параграфы одним.
-						*/
-						var paragraph = new Paragraph(document)
-						{
-							Text = contentForTable[startRowNumber == 0 ? i : i - 1][j++]
-						};
+							Text = dialogues[j++]
+					};
 
-						cell.Paragraphs.Clear();
-						cell.Paragraphs.Add(paragraph);
-					}
+					table.Rows[i].Cells[0].Paragraphs.Clear();
+					table.Rows[i].Cells[0].Paragraphs.Add(startTimeParagraph);
+
+					var replicTimeParagraph = new Paragraph(document)
+					{
+						Text = dialogues[j++]
+					};
+
+					table.Rows[i].Cells[2].Paragraphs.Clear();
+					table.Rows[i].Cells[2].Paragraphs.Add(replicTimeParagraph);
 				}
 			}
 
+			string srtFileName = Regex.Replace(fileName, @"\.doc.?$", ".srt");
+			File.WriteAllText(srtFileName, subtitleText);
 			document.SaveToFile(fileName);
 			return subtitleText;
 		}

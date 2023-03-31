@@ -2,8 +2,6 @@
 
 using SubtitleEdit;
 
-using System.Collections.Generic;
-using System.Linq;
 using System.Windows.Forms;
 
 namespace Nikse.SubtitleEdit.PluginLogic
@@ -39,11 +37,11 @@ namespace Nikse.SubtitleEdit.PluginLogic
 				subtitleFileName = form.PathToChosenFile;
 				parentForm.Text = subtitleFileName;
 
-				outputRawText = Translation.DocxToString(form.PathToChosenFile);
+				outputRawText = Translation.DocxToPlainText(form.PathToChosenFile);
 			}
 			else
 			{
-				outputRawText = Translation.ASSAToDocx(parentForm.Text.Replace("*", ""), rawText);
+				outputRawText = Translation.SRTToDocx(parentForm.Text.Replace("*", ""), rawText);
 				if (subtitle != "")
 					parentForm.Text = parentForm.Text.Replace("*", "");
 			}
