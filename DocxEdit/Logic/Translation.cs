@@ -32,7 +32,7 @@ namespace DocxEdit.Logic
 				return "";
 			}
 
-			Regex mmss = new Regex(@"(([0]?[0-9][0-9]|[0-9]):([0-5][0-9]))"); //время типа "МинМин:СекСек"
+			Regex mmss = new Regex(@"((0?[0-9][0-9]|[0-9]):([0-5][0-9]))"); //время типа "МинМин:СекСек"
 			TableCollection tables = document.Sections[0].Tables;
 			// вставка субтитра с таймкодом в реплике
 			foreach (Table table in tables)
@@ -42,7 +42,7 @@ namespace DocxEdit.Logic
 					foreach (Paragraph paragraph in table.Rows[i].Cells[2].Paragraphs)
 					{
 						int t = table.Rows[i].Cells.Count;
-						paragraph.Text = Regex.Replace(paragraph.Text, @"\^|\/", "");
+						paragraph.Text = Regex.Replace(paragraph.Text, @"\^|\/|:|(\.\.)|\(.*\)", "");
 						cellText += paragraph.Text + " ";
 					}
 
@@ -97,7 +97,7 @@ namespace DocxEdit.Logic
 							documentText += cell.Paragraphs[i].Text;
 					}
 
-			string newFileName = Regex.Replace(fileName, @"\.doc.?$", ".txt");
+			string newFileName = Regex.Replace(fileName, @"\.doc.?$", ".srt");
 			File.WriteAllText(newFileName, PlainTextToSRT(documentText));
 
 			return File.ReadAllText(newFileName);
@@ -105,7 +105,7 @@ namespace DocxEdit.Logic
 
 		static string PlainTextToSRT(string rawText)
 		{
-			const int optimalCharacterRatePerSecond = 15;
+			const int optimalCharacterRatePerSecond = 21;
 			string result = "";
 
 			List<string> rawLines = rawText
@@ -122,8 +122,17 @@ namespace DocxEdit.Logic
 					0,
 					0
 				);
-				int lettersCount = Regex.Matches(rawLines[i + 2], @"\w").Count; // кол-во буквенных символов для расчёта времени конца реплики
-				TimeOnly stopTime = startTime.Add(new TimeSpan(0, 0, lettersCount / optimalCharacterRatePerSecond));
+				// В случае, если предыдущий субтитр начинается тогда, когда
+				// начинается текущий, то прибавим к началу текущего 80 мс
+				if (i >= 3 && rawLines[i] == rawLines[i - 3])
+					startTime = startTime.Add(new TimeSpan(0, 0, 0, 0, 80));
+
+				int lettersCount = Regex.Matches(rawLines[i + 2], @"\P{P}").Count; // кол-во всех символов за исключением пунктуации для расчёта времени конца реплики
+				TimeSpan timeSpan = new TimeSpan(0, 0, 0, lettersCount / optimalCharacterRatePerSecond);
+				// Минимальная длительность одного субтитра (одной реплики): 200 мс
+				if (timeSpan < new TimeSpan(0, 0, 0, 0, 200))
+					timeSpan = new TimeSpan(0, 0, 0, 0, 200);
+				TimeOnly stopTime = startTime.Add(timeSpan);
 
 				string line = $"{j}\n{startTime:HH:mm:ss,fff} --> {stopTime:HH:mm:ss,fff}\n{rawLines[i + 2]}\n\n";
 				result += line;
@@ -134,6 +143,9 @@ namespace DocxEdit.Logic
 
 		public static string SRTToDocx(string fileName, string subtitleText)
 		{
+			string srtFileName = Regex.Replace(fileName, @"\.doc.?$", ".srt");
+			File.WriteAllText(srtFileName, subtitleText);
+
 			Document document;
 			try
 			{
@@ -151,7 +163,7 @@ namespace DocxEdit.Logic
 			}
 
 			List<string> dialogues = Regex
-				.Split(subtitleText, @"\d+\r\n") // разделение по цифрам
+				.Split(subtitleText, @"\d+\r\n") // разделение по цифрам; получается список таймкодов и реплик
 				.Where(line => !string.IsNullOrEmpty(line))
 				.ToList();
 
@@ -199,8 +211,6 @@ namespace DocxEdit.Logic
 				}
 			}
 
-			string srtFileName = Regex.Replace(fileName, @"\.doc.?$", ".srt");
-			File.WriteAllText(srtFileName, subtitleText);
 			document.SaveToFile(fileName);
 			return subtitleText;
 		}
