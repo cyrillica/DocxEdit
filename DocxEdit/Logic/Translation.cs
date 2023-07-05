@@ -42,7 +42,9 @@ namespace DocxEdit.Logic
 					foreach (Paragraph paragraph in table.Rows[i].Cells[2].Paragraphs)
 					{
 						int t = table.Rows[i].Cells.Count;
-						paragraph.Text = Regex.Replace(paragraph.Text, @"\^|\/|:|(\.\.)|\(.*\)", "");
+						// удаление спецсимволов в реплике актёра: ^, /, :, .., текста в скобках
+						paragraph.Text = Regex.Replace(paragraph.Text, @"\^|\/|:|(?<!\.)\.{2}(?!\.)", "");
+						paragraph.Text = Regex.Replace(paragraph.Text, @"\(.*\)", " ");
 						cellText += paragraph.Text + " ";
 					}
 
@@ -79,7 +81,6 @@ namespace DocxEdit.Logic
 			section.HeadersFooters.FirstPageHeader.ChildObjects.Clear();
 			section.HeadersFooters.Header.ChildObjects.Clear();
 
-			string documentText = "";
 			foreach (Table table in tables)
 				foreach (TableRow row in table.Rows)
 					if (row.Cells[0].Paragraphs[0].Text == "")
@@ -88,6 +89,7 @@ namespace DocxEdit.Logic
 						break;
 					}
 
+			string documentText = "";
 			foreach (Table table in tables)
 				foreach (TableRow row in table.Rows)
 					foreach (TableCell cell in row.Cells)
