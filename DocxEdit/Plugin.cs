@@ -11,7 +11,7 @@ namespace Nikse.SubtitleEdit.PluginLogic
 		string IPlugin.Name => "DocxEdit";
 		string IPlugin.Text => "DocxEdit (открыть файл)";
 		decimal IPlugin.Version => 0.1M;
-		string IPlugin.Description => "Edit MS Word files";
+		string IPlugin.Description => "Edit Office files";
 		// Can be one of these: file, tool, sync, translate, spellcheck
 		string IPlugin.ActionType => "file";
 		string IPlugin.Shortcut => string.Empty;

@@ -19,7 +19,7 @@ namespace SubtitleEdit
 
 			OpenFileDialog openFileDialog = new OpenFileDialog
 			{
-				Filter = "Файл MS Word (*.docx; *.doc)|*.docx; *.doc"
+				Filter = "Файл Office (*.docx; *.doc; *.odt)|*.docx; *.doc; *.odt"
 			};
 			if (openFileDialog.ShowDialog() == DialogResult.OK)
 				PathToChosenFile = openFileDialog.FileName;

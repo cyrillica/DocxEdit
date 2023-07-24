@@ -98,7 +98,7 @@ namespace DocxEdit.Logic
 							documentText += cell.Paragraphs[i].Text;
 					}
 
-			string newFileName = Regex.Replace(fileName, @"\.doc.?$", ".srt");
+			string newFileName = Regex.Replace(fileName, @"\.(doc.?|odt)$", ".srt");
 			File.WriteAllText(newFileName, PlainTextToSRT(documentText));
 
 			return File.ReadAllText(newFileName);
@@ -144,7 +144,7 @@ namespace DocxEdit.Logic
 
 		public static string SRTToDocx(string fileName, string subtitleText)
 		{
-			string srtFileName = Regex.Replace(fileName, @"\.doc.?$", ".srt");
+			string srtFileName = Regex.Replace(fileName, @"\.(doc.?|odt)$", ".srt");
 			File.WriteAllText(srtFileName, subtitleText);
 
 			Document document;
