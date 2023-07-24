@@ -12,7 +12,7 @@ namespace SubtitleEdit
 			InitializeComponent();
 		}
 
-		public Form1(string name, string description)
+		public Form1(string name)
 		{
 			InitializeComponent();
 			Text = name;
