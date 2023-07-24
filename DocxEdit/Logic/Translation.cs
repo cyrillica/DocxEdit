@@ -41,7 +41,6 @@ namespace DocxEdit.Logic
 					string cellText = "";
 					foreach (Paragraph paragraph in table.Rows[i].Cells[2].Paragraphs)
 					{
-						int t = table.Rows[i].Cells.Count;
 						// удаление спецсимволов в реплике актёра: ^, /, :, .., текста в скобках
 						paragraph.Text = Regex.Replace(paragraph.Text, @"\^|\/|:|(?<!\.)\.{2}(?!\.)", "");
 						paragraph.Text = Regex.Replace(paragraph.Text, @"\(.*\)", " ");
