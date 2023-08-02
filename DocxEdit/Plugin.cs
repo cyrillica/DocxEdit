@@ -9,7 +9,7 @@ namespace Nikse.SubtitleEdit.PluginLogic
 	public class DocxEdit: IPlugin // dll file name must "<classname>.dll" - e.g. "Haxor.dll"
 	{
 		string IPlugin.Name => "DocxEdit";
-		string IPlugin.Text => "DocxEdit (открыть файл)";
+		string IPlugin.Text => "DocxEdit (открыть или сохранить файл)";
 		decimal IPlugin.Version => 0.1M;
 		string IPlugin.Description => "Edit Office files";
 		// Can be one of these: file, tool, sync, translate, spellcheck
