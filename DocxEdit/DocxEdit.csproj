@@ -125,7 +125,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy . "C:\Users\ммм\AppData\Roaming\Subtitle Edit\Plugins\"
-copy . "C:\Program Files\Subtitle Edit\"</PostBuildEvent>
+    <PostBuildEvent>copy . "%25APPDATA%25\Subtitle Edit\Plugins\"
+</PostBuildEvent>
   </PropertyGroup>
 </Project>
