@@ -38,23 +38,15 @@ namespace DocxEdit.Logic
 			foreach (Table table in tables)
 				for (int i = 0; i < table.Rows.Count; ++i)
 				{
-					string cellText = "";
-					foreach (Paragraph paragraph in table.Rows[i].Cells[2].Paragraphs)
-					{
-						// удаление спецсимволов в реплике актёра: ^, /, :, .., текста в скобках
-						paragraph.Text = Regex.Replace(paragraph.Text, @"\^|\/|:|(?<!\.)\.{2}(?!\.)", "");
-						paragraph.Text = Regex.Replace(paragraph.Text, @"\(.*\)", " ");
-						cellText += paragraph.Text + " ";
-					}
-
+					string cellAuthorText = table.Rows[i].Cells[2].Paragraphs[0].Text;
 					List<string> timecodes = new List<string>();
-					foreach (Match match in mmss.Matches(cellText))
+					foreach (Match match in mmss.Matches(cellAuthorText))
 						timecodes.Add(match.Value);
 
 					if (timecodes.Count == 0)
-						continue;
+						continue; // если встроенных таймкодов в текст актёра нету, то переходим на следующую строку монтажного листа
 
-					string[] replics = cellText.Split(timecodes.ToArray(), StringSplitOptions.None);
+					string[] replics = cellAuthorText.Split(timecodes.ToArray(), StringSplitOptions.None);
 
 					table.Rows[i].Cells[2].Paragraphs.Clear();
 					table.Rows[i].Cells[2].AddParagraph().Text = replics[0];
@@ -93,6 +85,15 @@ namespace DocxEdit.Logic
 				foreach (TableRow row in table.Rows)
 					foreach (TableCell cell in row.Cells)
 					{
+						if (cell.GetCellIndex() == 2)
+							foreach (Paragraph paragraph in cell.Paragraphs)
+							{
+								// удаление спецсимволов в реплике актёра: ^, /, :, .., текста в скобках
+								paragraph.Text = Regex.Replace(paragraph.Text, @"\^|\/|:|(?<!\.)\.{2}(?!\.)", "");
+								paragraph.Text = Regex.Replace(paragraph.Text, @"\(.*\)", " ");
+								//cellAuthorText += paragraph.Text + " ";
+							}
+
 						cell.LastParagraph.Text += '|';
 						for (int i = 0; i < cell.Paragraphs.Count; ++i)
 							documentText += cell.Paragraphs[i].Text;
